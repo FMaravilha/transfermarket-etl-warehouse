@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from airflow.models import DAG
 from airflow.operators.python import PythonOperator
-from src.extract.download_dataset import main
+from src.extract.download_dataset import main as main_extract
+from src.validate.validate_raw import main as main_validate_raw
 
 #Defining DAG arguments
 default_args = {
@@ -15,7 +16,7 @@ default_args = {
     }
 
 with DAG(
-    'Player_Stats',
+    'transfermarkt_player_pipeline',
     default_args=default_args,
     description='Player stats and market value.',
     schedule="@weekly", #the dataset is updated weekly
@@ -24,7 +25,14 @@ with DAG(
 
     extract_dataset_from_kaggle=PythonOperator(
         task_id='extract_dataset',
-        python_callable= main,
-        dag=dag
+        python_callable= main_extract,
     )
+
+    validate_raw_data=PythonOperator(
+        task_id='validate_raw_data',
+        python_callable= main_validate_raw,
+    )
+
+extract_dataset_from_kaggle >> validate_raw_data 
+
 

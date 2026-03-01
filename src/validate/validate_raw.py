@@ -8,7 +8,7 @@ RAW_DIR = Path("data/raw")
 
 COLS = {
     "clubs.csv": {"club_id", "name"},
-    "player_valuations.csv": {"player_id", "date", "market_value"},
+    "player_valuations.csv": {"player_id", "date", "market_value_in_eur"},
     "players.csv": {"player_id", "name"},
 }
 

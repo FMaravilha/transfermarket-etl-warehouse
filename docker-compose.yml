@@ -25,7 +25,7 @@ services:
       - pgadmin_data:/var/lib/pgadmin
 
   airflow:
-    image: apache/airflow:2.9.3
+    build: .
     container_name: airflow
     depends_on:
       - postgres
@@ -35,6 +35,8 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       PYTHONPATH: /opt/airflow
       _PIP_ADDITIONAL_REQUIREMENTS: kaggle
+      CURL_CA_BUNDLE:
+      REQUESTS_CA_BUNDLE:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
