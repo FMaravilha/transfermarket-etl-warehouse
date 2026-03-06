@@ -1,7 +1,9 @@
 import subprocess
-from pathlib import Path
 import re
 import zipfile
+from pathlib import Path
+from datetime import datetime
+
 
 #Definition of default paths
 DATASET_ID = "davidcariboo/player-scores"
@@ -27,8 +29,11 @@ def get_remote_version():
     #If the search is not concluded with success raise the RunTimeError
     if result.returncode != 0:
         raise RuntimeError(f"Error searching on Kaggle:\n{result.stderr}")
+    return parse_remote_version(result.stdout)
+
+def parse_remote_version(output):
     
-    lines = result.stdout.splitlines()
+    lines = output.splitlines()
 
     # Regex to capture timestamp in the following format:
     # YYYY-MM-DD HH:MM:SS(.microseconds opcional)
@@ -39,23 +44,24 @@ def get_remote_version():
         if DATASET_ID in line:
             match = re.search(timestamp_pattern,line)
             if match:
-                return match.group(0)
+                return datetime.fromisoformat(match.group(0)) # return in date format
     
-    raise ValueError("Datase doesn't contain or lastUpdated not defined")
+    raise ValueError("Dataset doesn't contain or lastUpdated not defined")
 
 
 def get_local_version():
 
     #check local version
     if VERSION_FILE.exists():
-        return VERSION_FILE.read_text().strip()
+        version_str = VERSION_FILE.read_text().strip()
+        return datetime.fromisoformat(version_str)
     else:
         return None
 
 def save_local_version(ver):
 
     #write new version into local version file
-    VERSION_FILE.write_text(ver)
+    VERSION_FILE.write_text(ver.isoformat())
 
 def donwload_dataset():
     print(" Downloading dataset ...")
@@ -89,7 +95,7 @@ def main():
     print(f"Remote Version: {remote_ver}")
     print(f"Local Version: {local_ver}")
 
-    if (remote_ver != local_ver):
+    if (remote_ver > local_ver):
         print(" New version detected - updating raw datasets")
         donwload_dataset()
         save_local_version(remote_ver)
