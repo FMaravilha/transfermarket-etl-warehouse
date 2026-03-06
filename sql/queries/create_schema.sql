@@ -1,0 +1,1 @@
+CREATE SCHEMA staging IF NOT EXISTS;
