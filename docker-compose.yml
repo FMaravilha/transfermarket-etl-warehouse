@@ -3,9 +3,11 @@ services:
     image: postgres:15
     container_name: airflow-postgres
     environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: airflow
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
+      POSTGRES_PORT: 5432
     ports:
       - "5433:5432"
     volumes:
@@ -42,6 +44,7 @@ services:
       - ./data:/opt/airflow/data
       - ./src:/opt/airflow/src
       - ./.kaggle:/home/airflow/.kaggle
+      - ./sql:/opt/airflow/sql
     ports:
       - "8080:8080"
     command: standalone
