@@ -17,7 +17,7 @@ default_args = {
     }
 
 with DAG(
-    'transfermarkt_player_pipeline',
+    dag_id='transfermarkt_player_pipeline',
     default_args=default_args,
     description='Player stats and market value.',
     schedule="@weekly", #the dataset is updated weekly

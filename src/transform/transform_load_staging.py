@@ -10,17 +10,28 @@ PLAYERS_FILE = RAW_DIR / "players.csv"
 CLUBS_FILE = RAW_DIR / "clubs.csv"
 PLAYER_VALUATIONS_FILE = RAW_DIR / "player_valuations.csv"
 
-SQL_DIR = Path("sql/staging")
-CREATE_SCHEMA_TABLES_SQL = SQL_DIR / "create_staging_tables.sql"
+SQL_DIR = Path("/opt/airflow/sql/staging")
+CREATE_SCHEMA_TABLES_SQL = SQL_DIR / "creating_staging_tables.sql"
 
 PG_CONFIG = {
-    "host": os.getenv("POSTGRES_HOST"),
+    "host": os.getenv("POSTGRES_HOST", "postgres"),
     "port": int(os.getenv("POSTGRES_PORT", 5432)),
-    "user": os.getenv("POSTGRES_USER"),
-    "password": os.getenv("POSTGRES_PASSWORD"),
-    "dbname": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER", "airflow"),
+    "password": os.getenv("POSTGRES_PASSWORD", "airflow"),
+    "dbname": os.getenv("POSTGRES_DB", "airflow"),
 }
 
+
+# -----------------------------
+# Helpers
+# -----------------------------
+
+def to_int(series):
+    return (pd.to_numeric(series, errors="coerce").round().astype("Int64") )
+
+# -----------------------------
+# DB
+# -----------------------------
 
 def get_connection():
 
@@ -42,16 +53,15 @@ def create_staging_schema_and_tables(conn, cur):
 
 def truncate_staging_tables(conn, cur):
 
-    ddl = """
-    TRUNCATE TABLE
-        staging.player_valuations,
-        staging.players,
-        staging.clubs;
-    """
-
+    ddl = "TRUNCATE TABLE staging.player_valuations, staging.players, staging.clubs;"
+    
     cur.execute(ddl)
     conn.commit()
 
+
+# -----------------------------
+# Transform Players
+# -----------------------------
 
 def transform_players(file):
 
@@ -87,20 +97,15 @@ def transform_players(file):
     ]
 
     for col in text_cols:
-        df[col] = df[col].str.strip()
+        df[col] = df[col].astype("string").str.strip()
 
-    df["date_of_birth"] = pd.to_datetime(
-        df["date_of_birth"], errors="coerce"
-    ).dt.date
+    df["date_of_birth"] = pd.to_datetime(df["date_of_birth"], errors="coerce").dt.date
 
-    df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce")
-    df["height_in_cm"] = pd.to_numeric(df["height_in_cm"], errors="coerce")
-    df["market_value_in_eur"] = pd.to_numeric(
-        df["market_value_in_eur"], errors="coerce"
-    )
-    df["highest_market_value_in_eur"] = pd.to_numeric(
-        df["highest_market_value_in_eur"], errors="coerce"
-    )
+    df["player_id"] = to_int(df["player_id"])
+    df["height_in_cm"] = to_int(df["height_in_cm"])
+
+    df["market_value_in_eur"] = to_int(df["market_value_in_eur"])
+    df["highest_market_value_in_eur"] = to_int(df["highest_market_value_in_eur"])
 
     df = df.dropna(subset=["player_id"])
 
@@ -108,6 +113,10 @@ def transform_players(file):
 
     return df
 
+
+# -----------------------------
+# Transform Clubs
+# -----------------------------
 
 def transform_clubs(file):
 
@@ -118,7 +127,7 @@ def transform_clubs(file):
             "club_id",
             "name",
             "domestic_competition_id",
-            "total_market_value_in_eur",
+            "total_market_value",
             "squad_size",
             "average_age",
             "national_team_players",
@@ -140,18 +149,16 @@ def transform_clubs(file):
     ]
 
     for col in text_cols:
-        df[col] = df[col].str.strip()
+        df[col] = df[col].astype("string").str.strip()
 
-    df["club_id"] = pd.to_numeric(df["club_id"], errors="coerce")
-    df["total_market_value_in_eur"] = pd.to_numeric(
-        df["total_market_value_in_eur"], errors="coerce"
-    )
-    df["squad_size"] = pd.to_numeric(df["squad_size"], errors="coerce")
-    df["average_age"] = pd.to_numeric(df["average_age"], errors="coerce")
-    df["national_team_players"] = pd.to_numeric(
-        df["national_team_players"], errors="coerce"
-    )
-    df["stadium_seats"] = pd.to_numeric(df["stadium_seats"], errors="coerce")
+    df["club_id"] = to_int(df["club_id"])
+
+    df["total_market_value"] = to_int(df["total_market_value"])
+    df["average_age"] = to_int(df["average_age"])
+
+    df["squad_size"] = to_int(df["squad_size"])
+    df["national_team_players"] = to_int(df["national_team_players"])
+    df["stadium_seats"] = to_int(df["stadium_seats"])
 
     df = df.dropna(subset=["club_id"])
 
@@ -159,6 +166,10 @@ def transform_clubs(file):
 
     return df
 
+
+# -----------------------------
+# Transform Player Valuations
+# -----------------------------
 
 def transform_player_valuations(file):
 
@@ -179,20 +190,17 @@ def transform_player_valuations(file):
     df = df.replace(["", " ", "nan", "None"], pd.NA)
 
     df["player_club_domestic_competition_id"] = (
-        df["player_club_domestic_competition_id"].str.strip()
+        df["player_club_domestic_competition_id"]
+        .astype("string")
+        .str.strip()
     )
 
-    df["valuation_date"] = pd.to_datetime(
-        df["valuation_date"], errors="coerce"
-    ).dt.date
+    df["valuation_date"] = pd.to_datetime(df["valuation_date"], errors="coerce").dt.date
 
-    df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce")
-    df["market_value_in_eur"] = pd.to_numeric(
-        df["market_value_in_eur"], errors="coerce"
-    )
-    df["current_club_id"] = pd.to_numeric(
-        df["current_club_id"], errors="coerce"
-    )
+    df["player_id"] = to_int(df["player_id"])
+    df["current_club_id"] = to_int(df["current_club_id"])
+
+    df["market_value_in_eur"] = to_int(df["market_value_in_eur"])
 
     df = df.dropna(subset=["player_id", "valuation_date"])
 
@@ -201,11 +209,15 @@ def transform_player_valuations(file):
     return df
 
 
+# -----------------------------
+# Load
+# -----------------------------
+
 def copy_dataframe_to_table(conn, cur, df, table_name):
 
     buffer = io.StringIO()
 
-    df.to_csv(buffer, index=False, header=False)
+    df.to_csv(buffer, index=False, header=False, na_rep="")
 
     buffer.seek(0)
 
@@ -220,6 +232,10 @@ def copy_dataframe_to_table(conn, cur, df, table_name):
     conn.commit()
 
 
+# -----------------------------
+# Main
+# -----------------------------
+
 def main():
 
     pg_conn, pg_cur = get_connection()
@@ -233,9 +249,9 @@ def main():
     df_player_valuations = transform_player_valuations(PLAYER_VALUATIONS_FILE)
 
     tables = [
-    ("staging.players", df_players),
-    ("staging.clubs", df_clubs),
-    ("staging.player_valuations", df_player_valuations)
+        ("staging.players", df_players),
+        ("staging.clubs", df_clubs),
+        ("staging.player_valuations", df_player_valuations),
     ]
 
     for table_name, df in tables:
