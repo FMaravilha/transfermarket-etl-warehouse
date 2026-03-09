@@ -3,6 +3,7 @@ from airflow.models import DAG
 from airflow.operators.python import PythonOperator
 from src.extract.download_dataset import main as main_extract
 from src.validate.validate_raw import main as main_validate_raw
+from src.transform.transform_load_staging import main as main_transform
 
 #Defining DAG arguments
 default_args = {
@@ -33,6 +34,11 @@ with DAG(
         python_callable= main_validate_raw,
     )
 
-extract_dataset_from_kaggle >> validate_raw_data 
+    transform_and_load_staging=PythonOperator(
+        task_id='transform_raw_data',
+        python_callable= main_transform,
+    )
+
+extract_dataset_from_kaggle >> validate_raw_data >> transform_and_load_staging
 
 
