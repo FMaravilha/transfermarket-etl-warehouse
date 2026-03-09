@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS staging.clubs(
     coach_name TEXT
 );
 
-CREATE TABLE IF NOT EXISTS staging.players_valuations(
+CREATE TABLE IF NOT EXISTS staging.player_valuations(
     
     player_id BIGINT,
     valuation_date DATE,
