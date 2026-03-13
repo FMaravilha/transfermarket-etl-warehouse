@@ -100,10 +100,8 @@ def transform_players(file):
         df[col] = df[col].astype("string").str.strip()
 
     df["date_of_birth"] = pd.to_datetime(df["date_of_birth"], errors="coerce").dt.date
-
     df["player_id"] = to_int(df["player_id"])
     df["height_in_cm"] = to_int(df["height_in_cm"])
-
     df["market_value_in_eur"] = to_int(df["market_value_in_eur"])
     df["highest_market_value_in_eur"] = to_int(df["highest_market_value_in_eur"])
 
@@ -152,10 +150,8 @@ def transform_clubs(file):
         df[col] = df[col].astype("string").str.strip()
 
     df["club_id"] = to_int(df["club_id"])
-
     df["total_market_value"] = to_int(df["total_market_value"])
     df["average_age"] = to_int(df["average_age"])
-
     df["squad_size"] = to_int(df["squad_size"])
     df["national_team_players"] = to_int(df["national_team_players"])
     df["stadium_seats"] = to_int(df["stadium_seats"])
@@ -189,17 +185,12 @@ def transform_player_valuations(file):
 
     df = df.replace(["", " ", "nan", "None"], pd.NA)
 
-    df["player_club_domestic_competition_id"] = (
-        df["player_club_domestic_competition_id"]
-        .astype("string")
-        .str.strip()
-    )
+    df["player_club_domestic_competition_id"] = (df["player_club_domestic_competition_id"].astype("string").str.strip())
 
     df["valuation_date"] = pd.to_datetime(df["valuation_date"], errors="coerce").dt.date
 
     df["player_id"] = to_int(df["player_id"])
     df["current_club_id"] = to_int(df["current_club_id"])
-
     df["market_value_in_eur"] = to_int(df["market_value_in_eur"])
 
     df = df.dropna(subset=["player_id", "valuation_date"])
